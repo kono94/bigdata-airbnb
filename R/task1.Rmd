@@ -1,0 +1,8 @@
+---
+title: "AirBnB"
+output: html_notebook
+---
+```{r}
+df = read.csv(file="../data/listings_summary_filtered.csv")
+print(head(df))
+```
