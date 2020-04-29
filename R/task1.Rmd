@@ -3,6 +3,99 @@ title: "AirBnB"
 output: html_notebook
 ---
 ```{r}
-df = read.csv(file="../data/listings_summary_filtered.csv")
+df = read.csv(file="../data/listings_summary_filtered.csv", encoding = "UTF-8")
 print(head(df))
 ```
+Structure of the data frame
+```{r}
+str(df)
+```
+
+Analysing the CSV File
+
+```{r}
+# See if "read.csv()" outputs a data frame. It should by default
+print(is.data.frame(df))
+
+# Get the dimension of the data frame (column and row length)
+print(ncol(df))
+print(nrow(df))
+```
+
+
+Summary of the data frame (Only reasonable columns)
+```{r}
+# remove columns for summary that are not good to inspect mainly because they are strings
+summary(subset(df, select = -c(id,description,transit,host_id)))
+```
+
+Previous summary showed that all "price" variables are from type string because the the attached "$" sign.
+Transform all price columns to be numeric:
+```{r}
+# gsub() function replaces a substring by a regular expression. "[\\$,]" replaces all $-signs and commas. 
+df$price = as.numeric(gsub("[\\$,]", "", df$price))
+df$weekly_price = as.numeric(gsub("[\\$,]", "", df$weekly_price))
+df$monthly_price = as.numeric(gsub("[\\$,]", "", df$monthly_price))
+df$cleaning_fee = as.numeric(gsub("[\\$,]", "", df$cleaning_fee))
+
+# remove % sign as well to improve ordering
+df$host_response_rate = as.numeric(gsub("[\\%]", "", df$host_response_rate))
+
+cols <- c("price","weekly_price","monthly_price","cleaning_fee")
+# see if that worked as intented and see summary. "NA" mean that no price is given
+print(summary(df[cols]))
+```
+
+A "query" just for experimental reasons.
+
+Get all listings that have an above average review_score_rating and an above average number of number_of_reviews that
+have no cleaning_fee:
+```{r}
+# important to use "na.rm = TRUE" in mean() function and other aggregation functions
+info <- subset(df, review_scores_rating  > mean(review_scores_rating, na.rm = TRUE) & number_of_reviews > mean(df$number_of_reviews) & cleaning_fee == 0)
+print(info)
+```
+
+
+
+<h3> Visualize data </h3>
+
+
+```{r}
+# using advanced ggplot to create graphs
+library(ggplot2)
+# you might need to install this package by running install.packages("sqldf")'
+library(sqldf)
+
+res <- sqldf("SELECT COUNT(neighbourhood) AS count,neighbourhood FROM df WHERE neighbourhood != ''  GROUP BY neighbourhood ORDER BY count DESC")
+print(res)
+
+amount_of_rows <- 10
+new <- data.frame(
+  neighbourhood = res[1:amount_of_rows,]$neighbourhood,
+  count = res[1:amount_of_rows,]$count
+)
+
+# build data frame for "Sonstige" group
+tmp <- data.frame(
+  neighbourhood = "Sonstige",
+  count = sum(res[amount_of_rows:nrow(res),]$count)
+)
+# combine first columns with group "Sonstige"
+new <- rbind(new, tmp)
+
+# lock in factor level order
+new$neighbourhood <- factor(new$neighbourhood, levels =new$neighbourhood)
+print(new)
+
+ggplot(new, aes(x=neighbourhood, y=count, fill=neighbourhood)) +
+   ylim(0, max(new$count) + 200) + 
+  scale_x_discrete(limits = rev(levels(new$neighbourhood)))+
+  geom_bar(stat="identity", width=0.8, ) +
+  geom_text(aes(label=count), hjust=-0.3, size=3.5)+
+  coord_flip()+
+  theme_minimal() + 
+  theme(legend.position="none")
+
+```
+
