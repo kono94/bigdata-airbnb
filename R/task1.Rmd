@@ -3,6 +3,7 @@ title: "AirBnB"
 output: html_notebook
 ---
 ```{r}
+
 df = read.csv(file="../data/listings_summary_filtered.csv", encoding = "UTF-8")
 print(head(df))
 ```
@@ -10,6 +11,7 @@ Structure of the data frame
 ```{r}
 str(df)
 ```
+
 
 Analysing the CSV File
 
@@ -28,6 +30,9 @@ Summary of the data frame (Only reasonable columns)
 # remove columns for summary that are not good to inspect mainly because they are strings
 summary(subset(df, select = -c(id,description,transit,host_id)))
 ```
+```{r}
+mean(df$accommodates)
+```
 
 Previous summary showed that all "price" variables are from type string because the the attached "$" sign.
 Transform all price columns to be numeric:
@@ -43,7 +48,7 @@ df$host_response_rate = as.numeric(gsub("[\\%]", "", df$host_response_rate))
 
 cols <- c("price","weekly_price","monthly_price","cleaning_fee")
 # see if that worked as intented and see summary. "NA" mean that no price is given
-print(summary(df[cols]))
+summary(df[cols])
 ```
 
 A "query" just for experimental reasons.
@@ -67,7 +72,7 @@ library(ggplot2)
 # you might need to install this package by running install.packages("sqldf")'
 library(sqldf)
 
-res <- sqldf("SELECT COUNT(neighbourhood) AS count,neighbourhood FROM df WHERE neighbourhood != ''  GROUP BY neighbourhood ORDER BY count DESC")
+res <- sqldf("SELECT COUNT(neighbourhood) AS count,neighbourhood FROM df WHERE neighbourhood != '' GROUP BY neighbourhood ORDER BY count DESC")
 print(res)
 
 amount_of_rows <- 10
@@ -91,11 +96,59 @@ print(new)
 ggplot(new, aes(x=neighbourhood, y=count, fill=neighbourhood)) +
    ylim(0, max(new$count) + 200) + 
   scale_x_discrete(limits = rev(levels(new$neighbourhood)))+
-  geom_bar(stat="identity", width=0.8, ) +
+  geom_bar(stat="identity", width=0.8 ) +
   geom_text(aes(label=count), hjust=-0.3, size=3.5)+
   coord_flip()+
   theme_minimal() + 
   theme(legend.position="none")
+
+```
+Wenn ein Inserat ein superhost icon hat, wird es öfter gebucht?
+
+```{r}
+res <- sqldf("SELECT COUNT(*) AS anzahl, sum(number_of_reviews) FROM df WHERE host_is_superhost == 't' AND number_of_reviews != ''")
+
+res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(number_of_reviews) FROM df WHERE host_is_superhost == 'f'  AND number_of_reviews != ''")
+
+
+paste("Anzahl der Bewertungen pro Listing für Superhosts und Nicht-Superhosts:")
+paste("Superhost: ", res$`sum(number_of_reviews)` / res$anzahl, sep="")
+paste("Nicht-Superhost: ", res2$`sum(number_of_reviews)` / res2$anzahl, sep="")
+
+
+res <- sqldf("SELECT COUNT(*) AS anzahl, sum(review_scores_rating) FROM df WHERE host_is_superhost == 't' AND review_scores_rating != ''")
+
+res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(review_scores_rating) FROM df WHERE host_is_superhost == 'f'  AND review_scores_rating != ''")
+
+paste("Durschnittliche Review-Bewertung für einen Superhosts und Nicht-Superhosts:")
+paste("Superhost: ", res$`sum(review_scores_rating)` / res$anzahl, sep="")
+paste("Nicht-Superhost: ", res2$`sum(review_scores_rating)` / res2$anzahl, sep="")
+
+
+res <- sqldf("SELECT COUNT(*) AS anzahl, sum(host_response_rate) FROM df WHERE host_is_superhost == 't' AND host_response_rate != ''")
+
+res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(host_response_rate) FROM df WHERE host_is_superhost == 'f'  AND host_response_rate != ''")
+
+paste("Durschnittliche Response-Rate für einen Superhosts und Nicht-Superhosts:")
+paste("Superhost: ", res$`sum(host_response_rate)` / res$anzahl, sep="")
+paste("Nicht-Superhost: ", res2$`sum(host_response_rate)` / res2$anzahl, sep="")
+
+```
+
+Höhe cleaning_fee mit review_scores_cleanliness
+```{r}
+res <- sqldf("SELECT COUNT(*) AS anzahl, sum(host_response_rate) FROM df WHERE host_is_superhost == 't' AND host_response_rate != ''")
+```
+
+1 Zimmer -> AirCondition -> Prize
+```{r}
+res <- sqldf("SELECT price FROM df WHERE accommodates == 2 AND amenities LIKE '%Air conditioning%' AND price != 6000")
+
+res2 <- sqldf("SELECT price FROM df WHERE accommodates == 2 AND amenities NOT LIKE '%Air conditioning%' AND price != 6000")
+
+paste("Median-Preis für Wohnungen für zwei Personen mit Klimaanlage und ohne:")
+paste("Mit AC: ", median(res$price), sep="")
+paste("Ohne AC: ", median(res2$price), sep="")
 
 ```
 
