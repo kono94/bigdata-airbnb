@@ -107,7 +107,6 @@ Wenn ein Inserat ein superhost icon hat, wird es öfter gebucht?
 
 ```{r}
 res <- sqldf("SELECT COUNT(*) AS anzahl, sum(number_of_reviews) FROM df WHERE host_is_superhost == 't' AND number_of_reviews != ''")
-
 res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(number_of_reviews) FROM df WHERE host_is_superhost == 'f'  AND number_of_reviews != ''")
 
 
@@ -116,23 +115,68 @@ paste("Superhost: ", res$`sum(number_of_reviews)` / res$anzahl, sep="")
 paste("Nicht-Superhost: ", res2$`sum(number_of_reviews)` / res2$anzahl, sep="")
 
 
-res <- sqldf("SELECT COUNT(*) AS anzahl, sum(review_scores_rating) FROM df WHERE host_is_superhost == 't' AND review_scores_rating != ''")
+tmp <- data.frame(
+  key = c("Superhost", "Nicht-Superhost"),
+  value = c(round(res$`sum(number_of_reviews)` / res$anzahl, digits=2), round(res2$`sum(number_of_reviews)` / res2$anzahl,digits=2))
+) 
 
+
+ggplot(tmp, aes(x=key, y=value, fill=key)) +
+  ylim(0, max(tmp$value) + 10) + 
+  scale_x_discrete(limits = rev(levels(tmp$key)))+
+  scale_y_continuous("Durchschn. Anzahl der Bewertungen")+
+  geom_bar(stat="identity", width=0.8 ) +
+  geom_text(aes(label=value), vjust=2, color="white", size=4)+
+  theme_minimal() +
+  theme(axis.title.x=element_blank(), legend.position="none")
+
+
+res <- sqldf("SELECT COUNT(*) AS anzahl, sum(review_scores_rating) FROM df WHERE host_is_superhost == 't' AND review_scores_rating != ''")
 res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(review_scores_rating) FROM df WHERE host_is_superhost == 'f'  AND review_scores_rating != ''")
 
 paste("Durschnittliche Review-Bewertung für einen Superhosts und Nicht-Superhosts:")
 paste("Superhost: ", res$`sum(review_scores_rating)` / res$anzahl, sep="")
 paste("Nicht-Superhost: ", res2$`sum(review_scores_rating)` / res2$anzahl, sep="")
 
+tmp <- data.frame(
+  key = c("Superhost", "Nicht-Superhost"),
+  value = c(round(res$`sum(review_scores_rating)` / res$anzahl, digits=2), round(res2$`sum(review_scores_rating)` / res2$anzahl,digits=2))
+) 
+
+
+ggplot(tmp, aes(x=key, y=value, fill=key)) +
+  ylim(0, max(tmp$value) + 10) + 
+  scale_x_discrete(limits = rev(levels(tmp$key)))+
+  scale_y_continuous("Durchschn. Review-Bewertung")+
+  geom_bar(stat="identity", width=0.8 ) +
+  geom_text(aes(label=value), vjust=2, color="white", size=4)+
+  theme_minimal() +
+  theme(axis.title.x=element_blank(), legend.position="none")
+
+
+
 
 res <- sqldf("SELECT COUNT(*) AS anzahl, sum(host_response_rate) FROM df WHERE host_is_superhost == 't' AND host_response_rate != ''")
-
 res2 <- sqldf("SELECT COUNT(*) AS anzahl, sum(host_response_rate) FROM df WHERE host_is_superhost == 'f'  AND host_response_rate != ''")
 
 paste("Durschnittliche Response-Rate für einen Superhosts und Nicht-Superhosts:")
 paste("Superhost: ", res$`sum(host_response_rate)` / res$anzahl, sep="")
 paste("Nicht-Superhost: ", res2$`sum(host_response_rate)` / res2$anzahl, sep="")
 
+tmp <- data.frame(
+  key = c("Superhost", "Nicht-Superhost"),
+  value = c(round(res$`sum(host_response_rate)` / res$anzahl, digits=2), round(res2$`sum(host_response_rate)` / res2$anzahl,digits=2))
+) 
+
+
+ggplot(tmp, aes(x=key, y=value, fill=key)) +
+  ylim(0, max(tmp$value) + 10) + 
+  scale_x_discrete(limits = rev(levels(tmp$key)))+
+  scale_y_continuous("Durchschn. Response-Rate")+
+  geom_bar(stat="identity", width=0.8 ) +
+  geom_text(aes(label=value), vjust=2, color="white", size=4)+
+  theme_minimal() +
+  theme(axis.title.x=element_blank(), legend.position="none")
 ```
 
 Höhe cleaning_fee mit review_scores_cleanliness
@@ -151,4 +195,6 @@ paste("Mit AC: ", median(res$price), sep="")
 paste("Ohne AC: ", median(res2$price), sep="")
 
 ```
+
+
 
