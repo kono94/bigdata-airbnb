@@ -7,6 +7,7 @@ output: html_notebook
 df = read.csv(file="../data/listings_summary_filtered.csv", encoding = "UTF-8")
 print(head(df))
 ```
+
 Structure of the data frame
 ```{r}
 str(df)
@@ -58,7 +59,7 @@ have no cleaning_fee:
 ```{r}
 # important to use "na.rm = TRUE" in mean() function and other aggregation functions
 info <- subset(df, review_scores_rating  > mean(review_scores_rating, na.rm = TRUE) & number_of_reviews > mean(df$number_of_reviews) & cleaning_fee == 0)
-print(info)
+print(nrow(info))
 ```
 
 
@@ -196,5 +197,44 @@ paste("Ohne AC: ", median(res2$price), sep="")
 
 ```
 
+Korrelationen
+```{r}
+res <- sqldf("SELECT price,square_feet, cleaning_fee,review_scores_cleanliness, review_scores_rating  FROM df WHERE cleaning_fee != '' AND review_scores_cleanliness != '' AND  square_feet !='' AND review_scores_rating != ''")
 
+cor(res$cleaning_fee, res$review_scores_cleanliness)
+cor(res$price, res$square_feet)
+cor(res$price, res$review_scores_rating)
+```
+
+
+Multiple-Linear Regression
+```{r}
+res <- sqldf("SELECT price,accommodates,review_scores_rating FROM df WHERE price < 1000 LIMIT 500")
+
+reg	<- lm(res$price ~ res$accommodates + res$review_scores_rating)
+summary(reg)
+
+library(scatterplot3d)
+library(RColorBrewer)
+cloud(res$price ~ res$accommodates*res$review_scores_rating)
+
+# get colors for labeling the points
+plotclr <- brewer.pal(8,"PuBu") # get the colors
+colornum <- cut(rank(res$price), 8, labels=FALSE)
+colcode <- plotclr[colornum] # assign color
+
+# scatter plot
+plot.angle <- 60
+scatterplot3d(res$review_scores_rating,res$accommodates, res$price, type="h", angle=plot.angle, color=colcode, pch=20, cex.symbols=2, col.axis="gray", col.grid="gray")
+
+pricePredict <- function(accos,score){
+  -83.6 + 14.45 * accos + 1.14 * score
+}
+
+# Make a prediction
+# 3 accommodates and a score of 98
+paste("Geschätzter Preis bei 3 Besuchern und einem Rating von 98: ", pricePredict(3,98),  sep="")
+paste("Geschätzter Preis bei 2 Besuchern und einem Rating von 91: ", pricePredict(2,91),  sep="")
+
+```
 
