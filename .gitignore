@@ -1,3 +1,6 @@
+R/*.csv
+python/*.csv
+*.csv
 .DS_Store
 data/*
 !data/.gitkeep
